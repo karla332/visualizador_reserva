@@ -1,7 +1,7 @@
 import streamlit as st
 import geopandas as gpd
 import folium
-from folium.plugins import FloatImage, MousePosition, MeasureControl
+from folium.plugins import FloatImage, MeasureControl
 from folium import plugins
 import rasterio
 import numpy as np
@@ -65,12 +65,11 @@ for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
 # 7. Elementos finales: Rosa, Escala y Leyenda
-# Rosa de los vientos
 FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
 
-# Barra de escala
-plugins.MeasureControl(position='bottomleft', primary_length_unit='kilometers').add_to(m)
-folium.plugins.ScaleControl(position='bottomleft').add_to(m)
+# CORRECCIÓN AQUÍ: folium.ScaleControl en lugar de folium.plugins.ScaleControl
+MeasureControl(position='bottomleft').add_to(m)
+folium.ScaleControl(position='bottomleft').add_to(m)
 
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
