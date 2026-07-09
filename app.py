@@ -9,9 +9,9 @@ from streamlit_folium import st_folium
 import os
 
 st.set_page_config(layout="wide")
-st.title("Visualizador Ambiental: Reserva Nacional Alerce Costero")
+st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Carga de datos directa (con comprobación de existencia)
+# 1. Carga de datos
 def load_gpkg(path):
     if not os.path.exists(path):
         st.error(f"No se encuentra el archivo: {path}")
@@ -42,30 +42,32 @@ m = folium.Map(location=[reserva.geometry.centroid.y.mean(), reserva.geometry.ce
 folium.TileLayer('CartoDB positron', name='Mapa Base').add_to(m)
 folium.TileLayer(tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr='Esri', name='Satelital').add_to(m)
 
-# 4. Capa DEM
+# 4. Capa DEM - Ajustada para diferenciar Aridez (cafés) y Densidad (verdes)
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem = src.read(1)
         dem = np.where(dem == src.nodata, np.nan, dem)
         norm = plt.Normalize(vmin=np.nanmin(dem), vmax=np.nanmax(dem))
-        colored_dem = plt.get_cmap('terrain')(norm(dem))
-        folium.raster_layers.ImageOverlay(image=colored_dem, bounds=[[src.bounds.bottom, src.bounds.left], [src.bounds.top, src.bounds.right]], name="Relieve (DEM)", opacity=0.4).add_to(m)
+        # 'gist_earth' es ideal para el gradiente de aridez a bosque denso
+        colored_dem = plt.get_cmap('gist_earth')(norm(dem))
+        folium.raster_layers.ImageOverlay(
+            image=colored_dem, 
+            bounds=[[src.bounds.bottom, src.bounds.left], [src.bounds.top, src.bounds.right]], 
+            name="Mapa de Densidad/Aridez", 
+            opacity=0.5
+        ).add_to(m)
 except: pass
 
 # 5. Capas vectoriales
 folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 3}).add_to(m)
 folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2, 'opacity': 0.8}).add_to(m)
 
-# 6. Especies con Imágenes (Colores nuevos aplicados)
+# 6. Especies (Colores: Alerce rojo, Ranita púrpura, Chucao naranjo)
 for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     nombre = str(row.get('common_name', 'Especie'))
-    # Lógica actualizada: Alerce rojo, Ranita púrpura, Chucao naranjo
-    if 'Alerce' in nombre:
-        color = 'red'
-    elif 'Ranita' in nombre:
-        color = 'purple'
-    else:
-        color = 'orange'
+    if 'Alerce' in nombre: color = 'red'
+    elif 'Ranita' in nombre: color = 'purple'
+    else: color = 'orange'
     
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
