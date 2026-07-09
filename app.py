@@ -9,7 +9,7 @@ from streamlit_folium import st_folium
 import os
 
 st.set_page_config(layout="wide")
-st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
+st.title("Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
 # 1. Carga de datos directa
 def load_gpkg(path):
@@ -42,13 +42,12 @@ m = folium.Map(location=[reserva.geometry.centroid.y.mean(), reserva.geometry.ce
 folium.TileLayer('CartoDB positron', name='Mapa Base').add_to(m)
 folium.TileLayer(tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr='Esri', name='Satelital').add_to(m)
 
-# 4. Capa DEM (Aquí está el cambio para tus colores)
+# 4. Capa DEM
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem = src.read(1)
         dem = np.where(dem == src.nodata, np.nan, dem)
         norm = plt.Normalize(vmin=4, vmax=1042)
-        # 'RdYlGn_r' invierte el mapa para que Verde sea bajo y Rojo sea alto
         colored_dem = plt.get_cmap('RdYlGn_r')(norm(dem))
         folium.raster_layers.ImageOverlay(image=colored_dem, bounds=[[src.bounds.bottom, src.bounds.left], [src.bounds.top, src.bounds.right]], name="Relieve (DEM)", opacity=0.4).add_to(m)
 except: pass
@@ -57,23 +56,26 @@ except: pass
 folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 3}).add_to(m)
 folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2, 'opacity': 0.8}).add_to(m)
 
-# 6. Especies (Colores: Alerce=Rojo, Ranita=Púrpura, Chucao=Naranjo)
+# 6. Especies con Imágenes
 for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     nombre = str(row.get('common_name', 'Especie'))
-    if 'Alerce' in nombre: color = 'red'
-    elif 'Ranita' in nombre: color = 'purple'
-    else: color = 'orange'
-    
+    color = 'red' if 'Alerce' in nombre else ('purple' if 'Ranita' in nombre else ('orange' if 'Chucao' in nombre else 'gray'))
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales
+# 7. Elementos finales con leyenda completa
 FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
       <b style="color: black;">Leyenda:</b><br>
       <i class="fa fa-minus" style="color:#00BFFF"></i> <span style="color: black;">Ríos</span><br>
-      <i class="fa fa-circle" style="color:red"></i> <span style="color: black;">Alerce</span> | 
+      <hr style="margin: 5px 0;">
+      <b style="color: black;">Vegetación:</b><br>
+      <i class="fa fa-square" style="color:green"></i> <span style="color: black;">Árido</span><br>
+      <i class="fa fa-square" style="color:red"></i> <span style="color: black;">Denso</span><br>
+      <hr style="margin: 5px 0;">
+      <b style="color: black;">Especies:</b><br>
+      <i class="fa fa-circle" style="color:red"></i> <span style="color: black;">Alerce</span><br>
       <i class="fa fa-circle" style="color:purple"></i> <span style="color: black;">Ranita</span><br>
       <i class="fa fa-circle" style="color:orange"></i> <span style="color: black;">Chucao</span>
      </div>'''
