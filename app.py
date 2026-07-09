@@ -19,7 +19,24 @@ except Exception as e:
     st.error(f"Error cargando archivos: {e}")
     st.stop()
 
-# 2. Mapa base (Ahora con opción Satelital)
+# 2. Sidebar: Filtros y Métricas
+st.sidebar.header("Control de Datos")
+
+# Filtro de Especies
+especies_unicas = sorted(especies['common_name'].unique().tolist())
+especies_seleccionadas = st.sidebar.multiselect(
+    "Filtrar por especie:",
+    options=especies_unicas,
+    default=especies_unicas
+)
+
+# Métricas rápidas
+col1, col2, col3 = st.columns(3)
+col1.metric("Área Protegida", "1") # Puedes personalizar esto con datos reales
+col2.metric("Especies Visualizadas", len(especies[especies['common_name'].isin(especies_seleccionadas)]))
+col3.metric("Ríos mapeados", len(rios))
+
+# 3. Mapa base
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
 m = folium.Map(location=centro, zoom_start=13, tiles=None)
 
@@ -31,7 +48,7 @@ folium.TileLayer(
     name='Mapa Satelital'
 ).add_to(m)
 
-# 3. DEM (Estilo QGIS)
+# 4. DEM (Estilo QGIS)
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem_data = src.read(1)
@@ -44,12 +61,12 @@ try:
             image=colored_dem,
             bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],
             name="Relieve (DEM)",
-            opacity=0.6
+            opacity=0.5
         ).add_to(m)
 except Exception as e:
     st.sidebar.warning(f"No se pudo cargar el DEM: {e}")
 
-# 4. Capas vectoriales
+# 5. Capas vectoriales
 folium.GeoJson(
     reserva, 
     name="Reserva", 
@@ -62,16 +79,16 @@ folium.GeoJson(
     style_function=lambda x: {'color': '#00BFFF', 'weight': 2}
 ).add_to(m)
 
-# 5. Especies con Imágenes
-for _, row in especies.iterrows():
+# 6. Especies (Filtradas dinámicamente)
+especies_filtradas = especies[especies['common_name'].isin(especies_seleccionadas)]
+
+for _, row in especies_filtradas.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
         url_foto = row.get('image_url', '')
         
-        if 'Alerce' in nombre: color = 'purple'
-        elif 'Ranita' in nombre: color = 'red'
-        elif 'Chucao' in nombre: color = 'orange'
-        else: color = 'purple'
+        # Asignación de color
+        color = 'green' if 'Alerce' in nombre else ('red' if 'Ranita' in nombre else ('brown' if 'Chucao' in nombre else 'purple'))
 
         html_popup = f"""
         <div style="width: 150px;">
@@ -87,6 +104,6 @@ for _, row in especies.iterrows():
             popup=folium.Popup(html_popup, max_width=200)
         ).add_to(m)
 
-# 6. Control de capas y renderizado
+# 7. Control de capas y renderizado
 folium.LayerControl(collapsed=False).add_to(m)
 st_folium(m, width=900, height=600)
