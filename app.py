@@ -15,15 +15,15 @@ try:
     reserva = gpd.read_file('data/areas_protegidas.gpkg').to_crs(epsg=4326)
     rios = gpd.read_file('data/rios.geojson').to_crs(epsg=4326)
     especies = gpd.read_file('data/especies.gpkg').to_crs(epsg=4326)
+    
+    # LIMPIEZA DE DATOS: Eliminamos filas donde common_name esté vacío
+    especies = especies.dropna(subset=['common_name'])
 except Exception as e:
     st.error(f"Error cargando archivos: {e}")
     st.stop()
 
 # 2. Sidebar: Filtros y Métricas
 st.sidebar.header("Control de Datos")
-
-st.write("Columnas disponibles en especies:", especies.columns.tolist())
-# Filtro de Especies
 especies_unicas = sorted(especies['common_name'].unique().tolist())
 especies_seleccionadas = st.sidebar.multiselect(
     "Filtrar por especie:",
@@ -31,9 +31,8 @@ especies_seleccionadas = st.sidebar.multiselect(
     default=especies_unicas
 )
 
-# Métricas rápidas
 col1, col2, col3 = st.columns(3)
-col1.metric("Área Protegida", "1") # Puedes personalizar esto con datos reales
+col1.metric("Área Protegida", "RN Alerce Costero")
 col2.metric("Especies Visualizadas", len(especies[especies['common_name'].isin(especies_seleccionadas)]))
 col3.metric("Ríos mapeados", len(rios))
 
@@ -41,7 +40,6 @@ col3.metric("Ríos mapeados", len(rios))
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
 m = folium.Map(location=centro, zoom_start=13, tiles=None)
 
-# Añadir capas base
 folium.TileLayer('CartoDB positron', name='Mapa Base').add_to(m)
 folium.TileLayer(
     tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
@@ -49,7 +47,7 @@ folium.TileLayer(
     name='Mapa Satelital'
 ).add_to(m)
 
-# 4. DEM (Estilo QGIS)
+# 4. DEM (Asegurando el nombre correcto del archivo)
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem_data = src.read(1)
@@ -68,19 +66,10 @@ except Exception as e:
     st.sidebar.warning(f"No se pudo cargar el DEM: {e}")
 
 # 5. Capas vectoriales
-folium.GeoJson(
-    reserva, 
-    name="Reserva", 
-    style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 2}
-).add_to(m)
+folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 2}).add_to(m)
+folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2}).add_to(m)
 
-folium.GeoJson(
-    rios, 
-    name="Ríos", 
-    style_function=lambda x: {'color': '#00BFFF', 'weight': 2}
-).add_to(m)
-
-# 6. Especies (Filtradas dinámicamente)
+# 6. Especies (Filtradas)
 especies_filtradas = especies[especies['common_name'].isin(especies_seleccionadas)]
 
 for _, row in especies_filtradas.iterrows():
@@ -88,7 +77,7 @@ for _, row in especies_filtradas.iterrows():
         nombre = str(row.get('common_name', 'Especie'))
         url_foto = row.get('image_url', '')
         
-        # Asignación de color
+        # Lógica de color
         color = 'green' if 'Alerce' in nombre else ('red' if 'Ranita' in nombre else ('brown' if 'Chucao' in nombre else 'purple'))
 
         html_popup = f"""
@@ -105,6 +94,5 @@ for _, row in especies_filtradas.iterrows():
             popup=folium.Popup(html_popup, max_width=200)
         ).add_to(m)
 
-# 7. Control de capas y renderizado
 folium.LayerControl(collapsed=False).add_to(m)
 st_folium(m, width=900, height=600)
