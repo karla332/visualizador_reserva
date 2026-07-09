@@ -63,9 +63,8 @@ for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales (Rosa, Escala y Leyenda)
+# 7. Elementos finales (Solo Rosa y Leyenda)
 FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
-folium.map.ControlScale().add_to(m) # Escala básica
 
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
