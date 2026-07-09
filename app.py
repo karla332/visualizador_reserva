@@ -21,6 +21,7 @@ except Exception as e:
 
 # 2. Sidebar: Filtros y Métricas
 st.sidebar.header("Control de Datos")
+
 st.write("Columnas disponibles en especies:", especies.columns.tolist())
 # Filtro de Especies
 especies_unicas = sorted(especies['common_name'].unique().tolist())
