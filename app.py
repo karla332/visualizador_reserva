@@ -11,7 +11,7 @@ import os
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Carga de datos
+# 1. Carga de datos estable
 def load_gpkg(path):
     if not os.path.exists(path):
         st.error(f"No se encuentra el archivo: {path}")
@@ -63,11 +63,10 @@ for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales: Rosa y Leyenda
-# Inyectamos la rosa vía CSS/HTML para que no falle por carga de imagen externa
+# 7. Elementos finales: Rosa (Ajustada) y Leyenda
 rosa_html = '''
-<div style="position: fixed; top: 150px; left: 50px; z-index:9999;">
-<img src="https://upload.wikimedia.org/wikipedia/commons/f/fb/Rosa_de_los_vientos_51.svg" style="width:70px;">
+<div style="position: fixed; top: 50px; left: 50px; z-index:9999;">
+<img src="https://upload.wikimedia.org/wikipedia/commons/f/fb/Rosa_de_los_vientos_51.svg" style="width:120px;">
 </div>'''
 m.get_root().html.add_child(folium.Element(rosa_html))
 
@@ -86,5 +85,4 @@ legend_html = '''
 m.get_root().html.add_child(folium.Element(legend_html))
 
 folium.LayerControl(collapsed=False).add_to(m)
-# width=None expande el mapa a todo el ancho de la columna
 st_folium(m, width=None, height=600)
