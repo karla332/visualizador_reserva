@@ -11,7 +11,7 @@ import os
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Carga de datos
+# 1. Carga de datos (La que te funcionaba)
 def load_gpkg(path):
     if not os.path.exists(path):
         st.error(f"No se encuentra el archivo: {path}")
@@ -63,16 +63,15 @@ for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales: Rosa (FloatImage) y Escala (add_child)
+# 7. Elementos finales (Rosa y Leyenda con colores fuertes)
 FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
-m.add_child(folium.map.ScaleControl(position='bottomleft'))
 
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
       <b style="color: black;">Leyenda:</b><br>
       <i class="fa fa-minus" style="color:#00BFFF"></i> <span style="color: black;">Ríos</span><br>
-      <i class="fa fa-square" style="color:green"></i> <span style="color: black;">Árido</span><br>
-      <i class="fa fa-square" style="color:red"></i> <span style="color: black;">Denso</span><br>
+      <i class="fa fa-square" style="color:#00FF00"></i> <span style="color: black;"><b>Árido</b></span><br>
+      <i class="fa fa-square" style="color:#FF0000"></i> <span style="color: black;"><b>Denso</b></span><br>
       <i class="fa fa-circle" style="color:#FF1493"></i> <span style="color: black;">Alerce</span><br>
       <i class="fa fa-circle" style="color:purple"></i> <span style="color: black;">Ranita</span><br>
       <i class="fa fa-circle" style="color:orange"></i> <span style="color: black;">Chucao</span>
