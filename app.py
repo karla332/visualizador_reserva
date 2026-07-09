@@ -72,8 +72,9 @@ m.get_root().html.add_child(folium.Element(rosa_html))
 
 MeasureControl(position='bottomleft').add_to(m)
 
+# Leyenda elevada a 120px para no chocar con herramientas
 legend_html = '''
-     <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
+     <div style="position: fixed; bottom: 120px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
       <b style="color: black;">Leyenda:</b><br>
       <i class="fa fa-minus" style="color:#00BFFF"></i> <span style="color: black;">Ríos</span><br>
       <i class="fa fa-square" style="color:#00FF00"></i> <span style="color: black;"><b>Árido</b></span><br>
@@ -84,5 +85,6 @@ legend_html = '''
      </div>'''
 m.get_root().html.add_child(folium.Element(legend_html))
 
-folium.LayerControl(collapsed=False).add_to(m)
+# Capas en posición inferior derecha para no estorbar
+folium.LayerControl(position='bottomright', collapsed=True).add_to(m)
 st_folium(m, width=None, height=600)
