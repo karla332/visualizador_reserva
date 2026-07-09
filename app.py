@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 
+# Configuración de página
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
@@ -22,13 +23,12 @@ except Exception as e:
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
 m = folium.Map(location=centro, zoom_start=13, tiles="CartoDB positron")
 
-# 3. DEM con estilo QGIS (Usamos 'terrain' o 'gist_earth' para relieve natural)
+# 3. DEM (Estilo QGIS)
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem_data = src.read(1)
         dem_data = np.where(dem_data == src.nodata, np.nan, dem_data)
-        # 'terrain' es el más parecido a los relieves estándar de QGIS
-        cmap = plt.get_cmap('terrain') 
+        cmap = plt.get_cmap('terrain')
         norm = plt.Normalize(vmin=np.nanmin(dem_data), vmax=np.nanmax(dem_data))
         colored_dem = cmap(norm(dem_data))
         bounds = src.bounds
@@ -41,34 +41,46 @@ try:
 except Exception as e:
     st.sidebar.warning(f"No se pudo cargar el DEM: {e}")
 
-# 4. Reserva con borde verde oscuro y delgado
+# 4. Capas vectoriales
 folium.GeoJson(
     reserva, 
     name="Reserva", 
     style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 2}
 ).add_to(m)
 
-# 5. Ríos
-folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2}).add_to(m)
+folium.GeoJson(
+    rios, 
+    name="Ríos", 
+    style_function=lambda x: {'color': '#00BFFF', 'weight': 2}
+).add_to(m)
 
-# 6. Especies (Sin el zorro, solo tus datos reales)
+# 5. Especies con Imágenes
 for _, row in especies.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
-        # Lógica personalizada según TUS especies
+        url_foto = row.get('image_url', '') # Verifica que esta columna sea la correcta en tu archivo
+        
         if 'Alerce' in nombre: color = 'green'
         elif 'Ranita' in nombre: color = 'red'
         elif 'Chucao' in nombre: color = 'brown'
         else: color = 'purple'
 
-popup_html = f"""
-        <div style="width: 200px; font-family: sans-serif;">
+        # Popup con imagen
+        html_popup = f"""
+        <div style="width: 150px;">
             <h4 style="margin: 0;">{nombre}</h4>
-            <a href="{url_foto}" target="_blank"><img src="{url_foto}" style="width:100%; border-radius: 8px;"></a>
-            <br><br><a href="{url_web}" target="_blank">Ver detalles</a>
+            <img src="{url_foto}" style="width:100%; border-radius: 5px; margin-top: 5px;">
         </div>
         """
-        folium.CircleMarker([row.geometry.y, row.geometry.x], radius=8, color=color, fill=True, popup=folium.Popup(popup_html, max_width=250)).add_to(m)
+        
+        folium.CircleMarker(
+            [row.geometry.y, row.geometry.x], 
+            radius=6, 
+            color=color, 
+            fill=True,
+            popup=folium.Popup(html_popup, max_width=200)
+        ).add_to(m)
 
+# 6. Control de capas y renderizado
 folium.LayerControl(collapsed=False).add_to(m)
 st_folium(m, width=900, height=600)
