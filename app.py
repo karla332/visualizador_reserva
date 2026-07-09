@@ -52,9 +52,9 @@ for _, row in especies.iterrows():
         url_foto = row.get('image_url', '') # Asegúrate de que esta columna exista en tu archivo
         
         # Lógica de colores
-        if 'Alerce' in nombre: color = 'orange'
+        if 'Alerce' in nombre: color = 'purple'
         elif 'Ranita' in nombre: color = 'red'
-        elif 'Chucao' in nombre: color = 'purple'
+        elif 'Chucao' in nombre: color = 'orange'
         else: color = 'purple'
 
         # Crear el popup con la imagen
