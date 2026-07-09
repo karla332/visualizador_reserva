@@ -6,26 +6,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 
-# Configuración de página
+# Configuración
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Cargar datos (Carga segura)
+# 1. Cargar datos
 try:
-    # Si sigue fallando, es un tema de librerías del servidor, no de tu código
-    reserva = gpd.read_file('data/areas_protegidas.gpkg')
-    reserva = reserva.to_crs(epsg=4326)
-    
-    rios = gpd.read_file('data/rios.geojson')
-    rios = rios.to_crs(epsg=4326)
-    
-    especies = gpd.read_file('data/especies.gpkg')
-    especies = especies.to_crs(epsg=4326)
+    reserva = gpd.read_file('data/areas_protegidas.gpkg').to_crs(epsg=4326)
+    rios = gpd.read_file('data/rios.geojson').to_crs(epsg=4326)
+    especies = gpd.read_file('data/especies.gpkg').to_crs(epsg=4326)
 except Exception as e:
     st.error(f"Error cargando archivos: {e}")
     st.stop()
 
-# 2. Mapa base
+# 2. Sidebar: Filtros y Estadísticas
+st.sidebar.header("🎛️ Controles y Análisis")
+
+# Filtro de Especies
+especies_unicas = sorted(especies['common_name'].unique().tolist())
+seleccion = st.sidebar.multiselect("Filtrar por especie:", especies_unicas, default=especies_unicas)
+
+# Estadísticas en el panel lateral
+st.sidebar.subheader("📊 Estadísticas")
+st.sidebar.metric("Total Especies Cargadas", len(especies))
+st.sidebar.metric("Ríos identificados", len(rios))
+
+# Leyenda explicativa (Expansible)
+with st.sidebar.expander("ℹ️ Acerca de los datos"):
+    st.write("""
+    **Reserva Alerce Costero:** Datos vectoriales protegidos.
+    **Red Hídrica:** Capa hidrológica clave para la biodiversidad.
+    **Especies:** Observaciones de fauna y flora.
+    """)
+
+# 3. Mapa base
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
 m = folium.Map(location=centro, zoom_start=13, tiles=None)
 
@@ -36,7 +50,7 @@ folium.TileLayer(
     name='Mapa Satelital'
 ).add_to(m)
 
-# 3. DEM
+# 4. DEM
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem_data = src.read(1)
@@ -46,42 +60,25 @@ try:
         colored_dem = cmap(norm(dem_data))
         bounds = src.bounds
         folium.raster_layers.ImageOverlay(
-            image=colored_dem,
-            bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],
-            name="Relieve (DEM)",
-            opacity=0.6
+            image=colored_dem, bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],
+            name="Relieve (DEM)", opacity=0.5
         ).add_to(m)
-except Exception as e:
-    st.sidebar.warning(f"No se pudo cargar el DEM: {e}")
+except:
+    pass
 
-# 4. Capas vectoriales
+# 5. Capas
 folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 2}).add_to(m)
 folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2}).add_to(m)
 
-# 5. Especies
-for _, row in especies.iterrows():
-    if row.geometry:
-        nombre = str(row.get('common_name', 'Especie'))
-        url_foto = row.get('image_url', '')
-        
-        if 'Alerce' in nombre: color = 'green'
-        elif 'Ranita' in nombre: color = 'red'
-        elif 'Chucao' in nombre: color = 'brown'
-        else: color = 'purple'
-
-        html_popup = f"""
-        <div style="width: 150px;">
-            <h4 style="margin: 0;">{nombre}</h4>
-            <img src="{url_foto}" style="width:100%; border-radius: 5px; margin-top: 5px;">
-        </div>
-        """
-        folium.CircleMarker(
-            [row.geometry.y, row.geometry.x], 
-            radius=6, 
-            color=color, 
-            fill=True,
-            popup=folium.Popup(html_popup, max_width=200)
-        ).add_to(m)
+# 6. Especies (Filtradas)
+filtradas = especies[especies['common_name'].isin(seleccion)]
+for _, row in filtradas.iterrows():
+    nombre = str(row.get('common_name', 'Especie'))
+    url = row.get('image_url', '')
+    color = 'green' if 'Alerce' in nombre else ('red' if 'Ranita' in nombre else ('brown' if 'Chucao' in nombre else 'purple'))
+    
+    html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{url}" style="width:100%; border-radius:5px;"></div>'
+    folium.CircleMarker([row.geometry.y, row.geometry.x], radius=6, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
 folium.LayerControl(collapsed=False).add_to(m)
 st_folium(m, width=900, height=600)
