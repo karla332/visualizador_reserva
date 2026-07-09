@@ -19,9 +19,17 @@ except Exception as e:
     st.error(f"Error cargando archivos: {e}")
     st.stop()
 
-# 2. Mapa base
+# 2. Mapa base (Ahora con opción Satelital)
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
-m = folium.Map(location=centro, zoom_start=13, tiles="CartoDB positron")
+m = folium.Map(location=centro, zoom_start=13, tiles=None)
+
+# Añadir capas base
+folium.TileLayer('CartoDB positron', name='Mapa Base').add_to(m)
+folium.TileLayer(
+    tiles='https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attr='Esri',
+    name='Mapa Satelital'
+).add_to(m)
 
 # 3. DEM (Estilo QGIS)
 try:
@@ -58,21 +66,19 @@ folium.GeoJson(
 for _, row in especies.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
-        url_foto = row.get('image_url', '') # Verifica que esta columna sea la correcta en tu archivo
+        url_foto = row.get('image_url', '')
         
-        if 'Alerce' in nombre: color = 'green'
+        if 'Alerce' in nombre: color = 'purple'
         elif 'Ranita' in nombre: color = 'red'
-        elif 'Chucao' in nombre: color = 'brown'
+        elif 'Chucao' in nombre: color = 'orange'
         else: color = 'purple'
 
-        # Popup con imagen
         html_popup = f"""
         <div style="width: 150px;">
             <h4 style="margin: 0;">{nombre}</h4>
             <img src="{url_foto}" style="width:100%; border-radius: 5px; margin-top: 5px;">
         </div>
         """
-        
         folium.CircleMarker(
             [row.geometry.y, row.geometry.x], 
             radius=6, 
