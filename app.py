@@ -74,4 +74,11 @@ legend_html = '''
       <i class="fa fa-minus" style="color:#00BFFF"></i> <span style="color: black;">Ríos</span><br>
       <i class="fa fa-square" style="color:#00FF00"></i> <span style="color: black;"><b>Árido</b></span><br>
       <i class="fa fa-square" style="color:#FF0000"></i> <span style="color: black;"><b>Denso</b></span><br>
-      <i class="fa fa-circle" style
+      <i class="fa fa-circle" style="color:#FF1493"></i> <span style="color: black;">Alerce</span><br>
+      <i class="fa fa-circle" style="color:purple"></i> <span style="color: black;">Ranita</span><br>
+      <i class="fa fa-circle" style="color:orange"></i> <span style="color: black;">Chucao</span>
+     </div>'''
+m.get_root().html.add_child(folium.Element(legend_html))
+
+folium.LayerControl(collapsed=False).add_to(m)
+st_folium(m, width=900, height=600)
