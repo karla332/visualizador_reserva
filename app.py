@@ -56,7 +56,7 @@ for _, row in especies.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
         # Lógica personalizada según TUS especies
-        if 'Alerce' in nombre: color = 'megenta'
+        if 'Alerce' in nombre: color = 'magenta'
         elif 'Ranita' in nombre: color = 'purple'
         elif 'Chucao' in nombre: color = 'red'
         else: color = 'purple'
