@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from streamlit_folium import st_folium
 
-# Configuración de página
+# Configuración
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
@@ -17,7 +17,12 @@ try:
     rios = gpd.read_file('data/rios.geojson').to_crs(epsg=4326)
     especies = gpd.read_file('data/especies.gpkg').to_crs(epsg=4326)
     
-    # Calcular área (UTM 18S para la zona de la reserva)
+    # --- LIMPIEZA ESENCIAL ---
+    # Esto elimina filas donde 'common_name' no tiene nada, evitando el TypeError
+    especies = especies.dropna(subset=['common_name'])
+    # Aseguramos que todo sea texto
+    especies['common_name'] = especies['common_name'].astype(str)
+    
     area_ha = reserva.to_crs(epsg=32718).area.sum() / 10000
 except Exception as e:
     st.error(f"Error cargando archivos: {e}")
