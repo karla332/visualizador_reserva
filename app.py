@@ -10,33 +10,22 @@ from streamlit_folium import st_folium
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Cargar datos
+# 1. Cargar datos (Carga segura)
 try:
-    reserva = gpd.read_file('data/areas_protegidas.gpkg').to_crs(epsg=4326)
-    rios = gpd.read_file('data/rios.geojson').to_crs(epsg=4326)
-    especies = gpd.read_file('data/especies.gpkg').to_crs(epsg=4326)
+    # Si sigue fallando, es un tema de librerías del servidor, no de tu código
+    reserva = gpd.read_file('data/areas_protegidas.gpkg')
+    reserva = reserva.to_crs(epsg=4326)
     
-    # LIMPIEZA DE DATOS: Eliminamos filas donde common_name esté vacío
-    especies = especies.dropna(subset=['common_name'])
+    rios = gpd.read_file('data/rios.geojson')
+    rios = rios.to_crs(epsg=4326)
+    
+    especies = gpd.read_file('data/especies.gpkg')
+    especies = especies.to_crs(epsg=4326)
 except Exception as e:
     st.error(f"Error cargando archivos: {e}")
     st.stop()
 
-# 2. Sidebar: Filtros y Métricas
-st.sidebar.header("Control de Datos")
-especies_unicas = sorted(especies['common_name'].unique().tolist())
-especies_seleccionadas = st.sidebar.multiselect(
-    "Filtrar por especie:",
-    options=especies_unicas,
-    default=especies_unicas
-)
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Área Protegida", "RN Alerce Costero")
-col2.metric("Especies Visualizadas", len(especies[especies['common_name'].isin(especies_seleccionadas)]))
-col3.metric("Ríos mapeados", len(rios))
-
-# 3. Mapa base
+# 2. Mapa base
 centro = [reserva.geometry.centroid.y.mean(), reserva.geometry.centroid.x.mean()]
 m = folium.Map(location=centro, zoom_start=13, tiles=None)
 
@@ -47,7 +36,7 @@ folium.TileLayer(
     name='Mapa Satelital'
 ).add_to(m)
 
-# 4. DEM (Asegurando el nombre correcto del archivo)
+# 3. DEM
 try:
     with rasterio.open('data/DME_AREAS_PROTEGIDAS.tif') as src:
         dem_data = src.read(1)
@@ -60,25 +49,25 @@ try:
             image=colored_dem,
             bounds=[[bounds.bottom, bounds.left], [bounds.top, bounds.right]],
             name="Relieve (DEM)",
-            opacity=0.5
+            opacity=0.6
         ).add_to(m)
 except Exception as e:
     st.sidebar.warning(f"No se pudo cargar el DEM: {e}")
 
-# 5. Capas vectoriales
+# 4. Capas vectoriales
 folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 2}).add_to(m)
 folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2}).add_to(m)
 
-# 6. Especies (Filtradas)
-especies_filtradas = especies[especies['common_name'].isin(especies_seleccionadas)]
-
-for _, row in especies_filtradas.iterrows():
+# 5. Especies
+for _, row in especies.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
         url_foto = row.get('image_url', '')
         
-        # Lógica de color
-        color = 'green' if 'Alerce' in nombre else ('red' if 'Ranita' in nombre else ('brown' if 'Chucao' in nombre else 'purple'))
+        if 'Alerce' in nombre: color = 'green'
+        elif 'Ranita' in nombre: color = 'red'
+        elif 'Chucao' in nombre: color = 'brown'
+        else: color = 'purple'
 
         html_popup = f"""
         <div style="width: 150px;">
