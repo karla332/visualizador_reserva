@@ -56,9 +56,9 @@ for _, row in especies.iterrows():
     if row.geometry:
         nombre = str(row.get('common_name', 'Especie'))
         # Lógica personalizada según TUS especies
-        if 'Alerce' in nombre: color = 'green'
-        elif 'Ranita' in nombre: color = 'red'
-        elif 'Chucao' in nombre: color = 'brown'
+        if 'Alerce' in nombre: color = 'pink'
+        elif 'Ranita' in nombre: color = 'purple'
+        elif 'Chucao' in nombre: color = 'skyblue'
         else: color = 'purple'
 
         folium.CircleMarker(
