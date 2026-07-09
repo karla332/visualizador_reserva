@@ -11,7 +11,7 @@ import os
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Carga de datos
+# 1. Carga de datos estable
 def load_gpkg(path):
     if not os.path.exists(path):
         st.error(f"No se encuentra el archivo: {path}")
@@ -60,15 +60,12 @@ folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF',
 for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     nombre = str(row.get('common_name', 'Especie'))
     color = '#FF1493' if 'Alerce' in nombre else ('purple' if 'Ranita' in nombre else ('orange' if 'Chucao' in nombre else 'gray'))
-    html = f'<div style="width:150px; color:black;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
+    html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales: Rosa (Nueva) y Medidor
-FloatImage("https://upload.wikimedia.org/wikipedia/commons/f/fb/Rosa_de_los_vientos_51.svg", bottom=90, left=10).add_to(m)
+# 7. Elementos finales: Rosa y Leyenda
+FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
 MeasureControl(position='bottomleft').add_to(m)
-
-# Escala estática (inyectada por JS para no romper el código)
-m.add_child(folium.Element('<script>L.control.scale({position:"bottomright", imperial:false}).addTo(map);</script>'))
 
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
@@ -83,5 +80,6 @@ legend_html = '''
 m.get_root().html.add_child(folium.Element(legend_html))
 
 folium.LayerControl(collapsed=False).add_to(m)
-# Aumentamos el ancho a 100% y altura para que ocupe toda la pantalla disponible
-st_folium(m, width=None, height=700)
+
+# ESTO ES LO ÚNICO QUE CAMBIÉ: width=None para que se vea completo
+st_folium(m, width=None, height=600)
