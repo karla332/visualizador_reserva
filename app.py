@@ -9,7 +9,7 @@ from streamlit_folium import st_folium
 import os
 
 st.set_page_config(layout="wide")
-st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
+st.title("Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
 # 1. Carga de datos estable
 def load_gpkg(path):
