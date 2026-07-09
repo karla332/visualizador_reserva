@@ -59,7 +59,14 @@ folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF',
 # 6. Especies con Imágenes
 for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     nombre = str(row.get('common_name', 'Especie'))
-    color = 'green' if 'Alerce' in nombre else ('red' if 'Ranita' in nombre else ('brown' if 'Chucao' in nombre else 'purple'))
+    # Lógica de colores sin "Otros"
+    if 'Alerce' in nombre:
+        color = 'green'
+    elif 'Ranita' in nombre:
+        color = 'red'
+    else:
+        color = 'brown'
+    
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
@@ -71,8 +78,7 @@ legend_html = '''
       <i class="fa fa-minus" style="color:#00BFFF"></i> <span style="color: black;">Ríos</span><br>
       <i class="fa fa-circle" style="color:green"></i> <span style="color: black;">Alerce</span> | 
       <i class="fa fa-circle" style="color:red"></i> <span style="color: black;">Ranita</span><br>
-      <i class="fa fa-circle" style="color:brown"></i> <span style="color: black;">Chucao</span> | 
-      <i class="fa fa-circle" style="color:purple"></i> <span style="color: black;">Otros</span>
+      <i class="fa fa-circle" style="color:brown"></i> <span style="color: black;">Chucao</span>
      </div>'''
 m.get_root().html.add_child(folium.Element(legend_html))
 
