@@ -2,7 +2,6 @@ import streamlit as st
 import geopandas as gpd
 import folium
 from folium.plugins import FloatImage, MeasureControl
-from folium import plugins
 import rasterio
 import numpy as np
 import matplotlib.pyplot as plt
@@ -12,7 +11,7 @@ import os
 st.set_page_config(layout="wide")
 st.title("🌿 Visualizador Ambiental: Reserva Nacional Alerce Costero")
 
-# 1. Carga de datos directa
+# 1. Carga de datos
 def load_gpkg(path):
     if not os.path.exists(path):
         st.error(f"No se encuentra el archivo: {path}")
@@ -57,19 +56,20 @@ except: pass
 folium.GeoJson(reserva, name="Reserva", style_function=lambda x: {'fillColor': 'transparent', 'color': '#004d00', 'weight': 3}).add_to(m)
 folium.GeoJson(rios, name="Ríos", style_function=lambda x: {'color': '#00BFFF', 'weight': 2, 'opacity': 0.8}).add_to(m)
 
-# 6. Especies con Imágenes
+# 6. Especies con Imágenes (Alerce: #FF1493)
 for _, row in especies[especies['common_name'].isin(seleccion)].iterrows():
     nombre = str(row.get('common_name', 'Especie'))
     color = '#FF1493' if 'Alerce' in nombre else ('purple' if 'Ranita' in nombre else ('orange' if 'Chucao' in nombre else 'gray'))
     html = f'<div style="width:150px;"><h4>{nombre}</h4><img src="{row.get("image_url", "")}" style="width:100%; border-radius:5px;"></div>'
     folium.CircleMarker([row.geometry.y, row.geometry.x], radius=7, color=color, fill=True, popup=folium.Popup(html, max_width=200)).add_to(m)
 
-# 7. Elementos finales: Rosa, Escala y Leyenda
+# 7. Elementos finales (Rosa, Escala y Leyenda)
 FloatImage("https://raw.githubusercontent.com/sjauregui/folium_examples/master/north_arrow.png", bottom=90, left=10).add_to(m)
+folium.plugins.MeasureControl(position='bottomleft').add_to(m)
 
-# CORRECCIÓN AQUÍ: folium.ScaleControl en lugar de folium.plugins.ScaleControl
-MeasureControl(position='bottomleft').add_to(m)
-folium.ScaleControl(position='bottomleft').add_to(m)
+# Añadimos la escala de forma segura
+m.add_child(folium.map.LayerControl()) # Asegura que los controles carguen
+folium.LatLngPopup().add_to(m)
 
 legend_html = '''
      <div style="position: fixed; bottom: 50px; left: 50px; z-index:9999; font-size:12px; background:white; padding:10px; border-radius:5px; border:1px solid #ccc; color: black;">
@@ -83,5 +83,4 @@ legend_html = '''
      </div>'''
 m.get_root().html.add_child(folium.Element(legend_html))
 
-folium.LayerControl(collapsed=False).add_to(m)
 st_folium(m, width=900, height=600)
